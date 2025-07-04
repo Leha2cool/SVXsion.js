@@ -1,10 +1,8 @@
 /**
  * ComPAC.js - Common Patterns And Components
  * Плагин для SVXsion.js
- * Версия 1.0.2
+ * Версия 1.0.0
  * Лицензия: MIT
- * Дата: 2025-07-04
- * GitHub: https://github.com/Leha2cool
  */
 
 S.use('ComPAC', (S) => {
@@ -597,4 +595,303 @@ S.use('ComPAC', (S) => {
                         return;
                     } else {
                         isDeleting = true;
+                    }
+                }
+            }
+            
+            setTimeout(type, isDeleting ? deleteSpeed : speed);
+        };
+        
+        type();
+    };
+
+    /**
+     * ======================
+     * РАБОТА С API И ДАННЫМИ
+     * ======================
+     */
+
+    // Загрузка и отображение данных JSON
+    pac.loadJSON = async (url, containerSelector, templateFunction) => {
+        try {
+            const data = await S.fetchData(url);
+            const container = _getElement(containerSelector);
+            
+            if (container && templateFunction) {
+                container.innerHTML = data.map(item => templateFunction(item)).join('');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Ошибка загрузки данных:', error);
+            S.toast('Ошибка загрузки данных', 'error');
+        }
+    };
+
+    // Фильтрация данных
+    pac.filterData = (data, filters) => {
+        return data.filter(item => {
+            for (const key in filters) {
+                if (filters[key] !== undefined && item[key] !== filters[key]) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    };
+
+    // Поиск по данным
+    pac.searchData = (data, query, fields) => {
+        if (!query) return data;
+        
+        const lowerQuery = query.toLowerCase();
+        
+        return data.filter(item => {
+            for (const field of fields) {
+                const value = String(item[field]).toLowerCase();
+                if (value.includes(lowerQuery)) {
+                    return true;
+                }
+            }
+            return false;
+        });
+    };
+
+    // Пагинация данных
+    pac.paginateData = (data, currentPage, perPage) => {
+        const start = (currentPage - 1) * perPage;
+        const end = start + perPage;
+        return data.slice(start, end);
+    };
+
+    /**
+     * ======================
+     * РАБОТА С МЕДИА
+     * ======================
+     */
+
+    // Предпросмотр изображения перед загрузкой
+    pac.imagePreview = (inputSelector, previewSelector) => {
+        const input = _getElement(inputSelector);
+        const preview = _getElement(previewSelector);
+        
+        if (!input || !preview) return;
+        
+        input.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+            };
+            
+            reader.readAsDataURL(file);
+        });
+    };
+
+    // Проигрыватель аудио
+    pac.audioPlayer = (containerSelector, tracks) => {
+        const container = _getElement(containerSelector);
+        if (!container) return;
+        
+        // Создаем элементы плеера
+        const player = document.createElement('div');
+        player.className = 'audio-player';
+        
+        const audio = document.createElement('audio');
+        audio.controls = false;
+        
+        const trackList = document.createElement('ul');
+        trackList.className = 'track-list';
+        
+        tracks.forEach((track, index) => {
+            const li = document.createElement('li');
+            li.textContent = track.title;
+            li.dataset.src = track.src;
+            if (index === 0) li.classList.add('active');
+            trackList.appendChild(li);
+        });
+        
+        const controls = document.createElement('div');
+        controls.className = 'player-controls';
+        
+        const playBtn = document.createElement('button');
+        playBtn.className = 'play-btn';
+        playBtn.innerHTML = '&#9658;';
+        
+        const pauseBtn = document.createElement('button');
+        pauseBtn.className = 'pause-btn';
+        pauseBtn.innerHTML = '&#10074;&#10074;';
+        pauseBtn.style.display = 'none';
+        
+        const progress = document.createElement('div');
+        progress.className = 'progress';
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        progress.appendChild(progressBar);
+        
+        const time = document.createElement('div');
+        time.className = 'time';
+        time.textContent = '0:00 / 0:00';
+        
+        controls.appendChild(playBtn);
+        controls.appendChild(pauseBtn);
+        controls.appendChild(progress);
+        controls.appendChild(time);
+        
+        player.appendChild(audio);
+        player.appendChild(trackList);
+        player.appendChild(controls);
+        container.appendChild(player);
+        
+        // Обработчики событий
+        playBtn.addEventListener('click', () => {
+            audio.play();
+            playBtn.style.display = 'none';
+            pauseBtn.style.display = 'inline-block';
+        });
+        
+        pauseBtn.addEventListener('click', () => {
+            audio.pause();
+            pauseBtn.style.display = 'none';
+            playBtn.style.display = 'inline-block';
+        });
+        
+        // Выбор трека
+        trackList.querySelectorAll('li').forEach(li => {
+            li.addEventListener('click', () => {
+                trackList.querySelectorAll('li').forEach(item => {
+                    item.classList.remove('active');
+                });
+                li.classList.add('active');
                 
+                audio.src = li.dataset.src;
+                audio.play();
+                playBtn.style.display = 'none';
+                pauseBtn.style.display = 'inline-block';
+            });
+        });
+        
+        // Обновление прогресса
+        audio.addEventListener('timeupdate', () => {
+            const currentTime = audio.currentTime;
+            const duration = audio.duration;
+            
+            if (duration) {
+                const percent = (currentTime / duration) * 100;
+                progressBar.style.width = `${percent}%`;
+                
+                // Форматирование времени
+                const formatTime = (seconds) => {
+                    const min = Math.floor(seconds / 60);
+                    const sec = Math.floor(seconds % 60);
+                    return `${min}:${sec.toString().padStart(2, '0')}`;
+                };
+                
+                time.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+            }
+        });
+        
+        // Перемотка по клику на прогресс-бар
+        progress.addEventListener('click', (e) => {
+            const rect = progress.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = pos * audio.duration;
+        });
+        
+        // Автоматическое воспроизведение следующего трека
+        audio.addEventListener('ended', () => {
+            const current = trackList.querySelector('li.active');
+            const next = current.nextElementSibling || trackList.firstElementChild;
+            
+            if (next) {
+                current.classList.remove('active');
+                next.classList.add('active');
+                audio.src = next.dataset.src;
+                audio.play();
+            }
+        });
+        
+        // Загрузка первого трека
+        const firstTrack = trackList.querySelector('li.active');
+        if (firstTrack) {
+            audio.src = firstTrack.dataset.src;
+        }
+    };
+
+    /**
+     * ======================
+     * ИНИЦИАЛИЗАЦИЯ ПЛАГИНА
+     * ======================
+     */
+    
+    // Регистрация всех функций плагина
+    return {
+        // Утилиты
+        randomColor: pac.randomColor,
+        formatNumber: pac.formatNumber,
+        isEmpty: pac.isEmpty,
+        deepCopy: pac.deepCopy,
+        mergeObjects: pac.mergeObjects,
+        filterArray: pac.filterArray,
+        sortArray: pac.sortArray,
+        unique: pac.unique,
+        randomItem: pac.randomItem,
+        toQueryString: pac.toQueryString,
+        uniqueId: pac.uniqueId,
+        
+        // Работа с датами
+        addDays: pac.addDays,
+        daysBetween: pac.daysBetween,
+        formatDuration: pac.formatDuration,
+        isWeekend: pac.isWeekend,
+        calculateAge: pac.calculateAge,
+        
+        // Формы
+        clearForm: pac.clearForm,
+        showFormErrors: pac.showFormErrors,
+        hideFormErrors: pac.hideFormErrors,
+        validateEmail: pac.validateEmail,
+        validatePassword: pac.validatePassword,
+        validatePhone: pac.validatePhone,
+        
+        // UI компоненты
+        accordion: pac.accordion,
+        tabs: pac.tabs,
+        dropdown: pac.dropdown,
+        toggleSwitch: pac.toggleSwitch,
+        starRating: pac.starRating,
+        
+        // Шаблоны
+        loginPageTemplate: pac.loginPageTemplate,
+        productCardTemplate: pac.productCardTemplate,
+        imageGalleryTemplate: pac.imageGalleryTemplate,
+        paginationTemplate: pac.paginationTemplate,
+        
+        // Анимации
+        parallax: pac.parallax,
+        hoverEffect: pac.hoverEffect,
+        typewriter: pac.typewriter,
+        
+        // Работа с данными
+        loadJSON: pac.loadJSON,
+        filterData: pac.filterData,
+        searchData: pac.searchData,
+        paginateData: pac.paginateData,
+        
+        // Работа с медиа
+        imagePreview: pac.imagePreview,
+        audioPlayer: pac.audioPlayer,
+        
+        // Инициализация плагина
+        init: () => {
+            if (S.debugMode) {
+                console.log('ComPAC.js plugin initialized');
+            }
+        }
+    };
+});
