@@ -18,7 +18,7 @@
 Добавьте в ваш HTML-файл перед закрывающим тегом `</body>`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/svxsion@2.0.0/dist/svxsion.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Leha2cool/SVXsion.js@main/code/SVXsion.js"></script>
 <script>
   // Включение режима отладки
   S.debug(true);
