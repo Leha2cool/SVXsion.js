@@ -17,10 +17,10 @@
 
 ```html
 <!-- Подключение SVXsion.js -->
-<script src="svxsion.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Leha2cool/SVXsion.js@main/code/SVXsion.js"></script>
 
 <!-- Подключение плагина ComPAC.js -->
-<script src="compac.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Leha2cool/SVXsion.js@main/Plugins/ComPAC/ComPAC.js"></script>
 ```
 
 ## Инициализация
